@@ -1,0 +1,5 @@
+__pycache__
+.python-version
+.venv
+Lesson_1/__pycache__
+Lesson_1/models/__pycache__
