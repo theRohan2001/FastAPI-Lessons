@@ -2,8 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from user import UserDb
-from pydantic import BaseModel, EmailStr
-
+from pydantic import BaseModel, EmailStr, field_validator
 
 app = FastAPI()
 
@@ -16,10 +15,27 @@ def get_db():
         db.close()
 
 
+    
+class Tweet(BaseModel):
+    content: str
+    hastags: list[str]
+
 
 class UserBody(BaseModel):
     name: str
     email: EmailStr
+    age: int
+    tweets: list[Tweet] | None = None
+
+    @field_validator("age")
+    @classmethod
+    def validate_age(cls, value: int):
+        if value < 18 or value > 100:
+            raise ValueError(
+                "Age must be between 18 and 100"
+            )
+        return value
+    
 
 
 @app.post("/user")
@@ -47,7 +63,7 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
     
     return user
 
-@app.post("/user/{user_id}")
+@app.put("/user/{user_id}")
 async def update_user(user_id: int,
                       user: UserBody,
                       db: Session = Depends(get_db)):
@@ -67,7 +83,7 @@ async def update_user(user_id: int,
 
 
 
-@app.get("/users")
+@app.get("/users", response_model= list[UserBody])
 async def read_users(db: Session = Depends(get_db)):
     users = db.query(UserDb).all()
     return users
@@ -86,4 +102,5 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"detail": "User deleted"}
+
 
